@@ -55,7 +55,7 @@
   </div>
 
   <script>
-    const correctPassword = 'mjmagic'; // CHANGE THIS TO YOUR SECRET PASSWORD
+    const correctPassword = 'mjmagic';
 
     document.getElementById('password').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') checkPassword();
@@ -73,7 +73,6 @@
       }
     }
 
-    // Slideshow logic below
     function startSlideshow() {
       const userId = '23efdc1b-ff0d-4e48-95e9-05f8a50a7528';
       const apiUrl = `https://www.midjourney.com/api/app/recent-jobs/?user_id=${userId}`;
