@@ -90,7 +90,7 @@
         const res = await fetch(apiUrl);
         const json = await res.json();
         jobs = json.jobs.map(j => ({
-          url: j?.image_paths?.[0]?.replace('https://cdn.midjourney.com/', 'https://cdn.midjourney.com/') || '',
+          url: j?.image_paths?.[0] || '',
           prompt: j.full_command || ''
         })).filter(j => j.url);
         shuffle(jobs);
