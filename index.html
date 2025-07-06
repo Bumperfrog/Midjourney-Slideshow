@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Midjourney Slideshow</title>
+  <style>
+    body { margin: 0; background: #222; color: #eee; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
+    #slideshow, #controls { display: none; }
+    #slide { max-width: 100%; max-height: 100%; }
+    #controls { padding: 10px; background: #333; display: flex; align-items: center; gap: 8px; }
+    button, input { background: #444; color: #eee; border: none; padding: 6px 10px; border-radius: 4px; }
+    input { width: 60px; }
+    #filter { flex: 1; }
+
+    #lock-screen {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #111;
+    }
+    #lock-screen input {
+      font-size: 18px;
+      padding: 8px;
+      margin-top: 10px;
+    }
+    #error {
+      color: red;
+      margin-top: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="lock-screen">
+    <h2>Enter Password to View Slideshow</h2>
+    <input type="password" id="password" placeholder="Enter password">
+    <div id="error">Incorrect password</div>
+  </div>
+
+  <div id="slideshow">
+    <img id="slide" src="" alt="Loading...">
+  </div>
+  <div id="controls">
+    <button id="prev">⏮️</button>
+    <button id="play">⏸️</button>
+    <button id="next">⏭️</button>
+    <label>Delay:
+      <input id="delay" type="number" value="3" min="1">s
+    </label>
+    <label>Keyword:
+      <input id="filter" type="text" placeholder="search prompt...">
+    </label>
+  </div>
+
+  <script>
+    const correctPassword = 'I8theRobots!'; // CHANGE THIS TO YOUR SECRET PASSWORD
+
+    document.getElementById('password').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') checkPassword();
+    });
+
+    function checkPassword() {
+      const input = document.getElementById('password').value;
+      if (input === correctPassword) {
+        document.getElementById('lock-screen').style.display = 'none';
+        document.getElementById('slideshow').style.display = 'flex';
+        document.getElementById('controls').style.display = 'flex';
+        startSlideshow();
+      } else {
+        document.getElementById('error').style.display = 'block';
+      }
+    }
+
+    // Slideshow logic below
+    function startSlideshow() {
+      const userId = '23efdc1b-ff0d-4e48-95e9-05f8a50a7528';
+      const apiUrl = `https://www.midjourney.com/api/app/recent-jobs/?user_id=${userId}`;
+      let jobs = [], current = 0, playing = true, timer;
+
+      const slide = document.getElementById('slide');
+      const prevBtn = document.getElementById('prev');
+      const nextBtn = document.getElementById('next');
+      const playBtn = document.getElementById('play');
+      const delayInput = document.getElementById('delay');
+      const filterInput = document.getElementById('filter');
+
+      async function fetchJobs() {
+        const res = await fetch(apiUrl);
+        const json = await res.json();
+        jobs = json.jobs.map(j => ({
+          url: j?.image_paths?.[0]?.replace('https://cdn.midjourney.com/', 'https://cdn.midjourney.com/') || '',
+          prompt: j.full_command || ''
+        })).filter(j => j.url);
+        shuffle(jobs);
+      }
+
+      function shuffle(arr) {
+        for (let i = arr.length -1; i > 0; i--) {
+          const r = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[r]] = [arr[r], arr[i]];
+        }
+      }
+
+      function applyFilter() {
+        const kw = filterInput.value.toLowerCase();
+        return jobs.filter(j => j.prompt.toLowerCase().includes(kw));
+      }
+
+      function showSlide(idx) {
+        const list = applyFilter();
+        if (!list.length) {
+          slide.src = '';
+          slide.alt = 'No images match filter';
+          return;
+        }
+        current = (idx + list.length) % list.length;
+        slide.src = list[current].url;
+        slide.alt = list[current].prompt;
+      }
+
+      function next() { showSlide(current + 1); }
+      function prev() { showSlide(current - 1); }
+      function playToggle() {
+        playing = !playing;
+        playBtn.textContent = playing ? '⏸️' : '▶️';
+        if (playing) auto();
+        else clearTimeout(timer);
+      }
+      function auto() {
+        clearTimeout(timer);
+        const delay = (parseFloat(delayInput.value) || 3) * 1000;
+        timer = setTimeout(() => {
+          next();
+          if (playing) auto();
+        }, delay);
+      }
+
+      prevBtn.onclick = prev;
+      nextBtn.onclick = next;
+      playBtn.onclick = playToggle;
+      delayInput.onchange = () => { if (playing) auto(); };
+      filterInput.oninput = () => { current = 0; showSlide(0); };
+
+      (async function init() {
+        await fetchJobs();
+        showSlide(0);
+        if (playing) auto();
+      })();
+    }
+  </script>
+</body>
+</html>
